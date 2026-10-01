@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shopping_list_app/data/categories.dart';
 import 'package:shopping_list_app/models/category.dart';
 import 'package:shopping_list_app/models/grocery_item.dart';
+import 'package:http/http.dart' as http;
 
 class NewItem extends StatefulWidget {
   const NewItem({super.key});
@@ -19,17 +22,40 @@ class NewItemState extends State<NewItem> {
   var _enteredQuantity = 1;
   var _selectedCategory = categories[Categories.vegetables]!;
 
-  void _saveItem() {
+  void _saveItem() async{
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
-      Navigator.of(context).pop(
-        GroceryItem(
-          id: DateTime.now().toString(),
-          name: _enteredName,
-          quantity: _enteredQuantity,
-          category: _selectedCategory,
+      final url = Uri.https(
+        'flutter-prep-311d1-default-rtdb.firebaseio.com',
+        'shopping_list.json',
+      );
+
+      final response = await http.post(
+        url,
+        headers: {'content-type': 'application/json'},
+        body: json.encode({
+          'name': _enteredName,
+          'quantity': _enteredQuantity,
+          'category': {
+            'title': _selectedCategory.title,
+            },
+        }
         ),
+      );
+      print(response.body);
+      print(response.statusCode);
+
+      if(!context.mounted){
+        return;
+      }
+      Navigator.of(context).pop(
+        // GroceryItem(
+        //   id: DateTime.now().toString(),
+        //   name: _enteredName,
+        //   quantity: _enteredQuantity,
+        //   category: _selectedCategory,
+        // ),
       );
     }
   }
@@ -47,9 +73,7 @@ class NewItemState extends State<NewItem> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add New Item'),
-      ),
+      appBar: AppBar(title: const Text('Add New Item')),
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: Form(
@@ -58,9 +82,7 @@ class NewItemState extends State<NewItem> {
             children: [
               TextFormField(
                 maxLength: 50,
-                decoration: const InputDecoration(
-                  label: Text('Name'),
-                ),
+                decoration: const InputDecoration(label: Text('Name')),
                 initialValue: _enteredName,
                 validator: (value) {
                   if (value == null ||
@@ -143,10 +165,7 @@ class NewItemState extends State<NewItem> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(
-                    onPressed: _resetForm,
-                    child: const Text('Reset'),
-                  ),
+                  TextButton(onPressed: _resetForm, child: const Text('Reset')),
 
                   ElevatedButton(
                     onPressed: _saveItem,
@@ -161,4 +180,3 @@ class NewItemState extends State<NewItem> {
     );
   }
 }
-
